@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>64卦真人现实解惑机</title>
+    <style>
+        :root {
+            --bg-color: #f7f5f0;
+            --primary-color: #332c22;
+            --accent-upper: #d97706; /* 上上卦金色 */
+            --accent-middle: #2563eb; /* 中上/中平蓝色 */
+            --accent-lower: #dc2626; /* 中下/下下红色 */
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 650px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            font-size: 2rem;
+            letter-spacing: 2px;
+        }
+
+        .hint {
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        .action-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            display: none;
+        }
+
+        .卦头 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .卦名 {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .评级 {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        /* 动态吉凶颜色 */
+        .上上卦 { background-color: var(--accent-upper); }
+        .中上卦 { background-color: var(--accent-middle); }
+        .中平卦 { background-color: #6b7280; }
+        .中下卦 { background-color: #f97316; }
+        .下下卦 { background-color: var(--accent-lower); }
+
+        .大局观 {
+            background: #fdfbf7;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+
+        /* 核心：由下往上排列 */
+        .爻位列表 {
+            display: flex;
+            flex-direction: column-reverse; 
+            gap: 15px;
+        }
+
+        .爻条 {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 15px;
+            transition: all 0.3s;
+        }
+
+        .爻条:hover {
+            border-color: #ddd;
+            background: #fff;
+        }
+
+        .爻名 {
+            font-weight: bold;
+            color: #444;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .爻名 span {
+            font-size: 0.8rem;
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #666;
+        }
+
+        .现实指南 {
+            font-size: 0.95rem;
+            color: #332c22;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🔮 64卦解惑机</h1>
+        <div class="hint">闭眼默想你当下的困惑5秒钟，留意你身边当下的声音或第一眼看到的物件（外应）</div>
+    </header>
+
+    <div class="action-area">
+        <button onclick="起卦()">随机起卦，开示当下</button>
+    </div>
+
+    <div class="result-card" id="resultCard">
+        <div class="卦头">
+            <div class="卦名" id="guaName">加载中...</div>
+            <div class="评级" id="guaLevel">加载中...</div>
+        </div>
+        <div class="大局观" id="guaSummary"></div>
+        
+        <h3 style="margin-top: 30px; margin-bottom: 10px;">👇 破局指南（由下往上，看你处于哪一步）</h3>
+        <div class="爻位列表" id="yaoList"></div>
+    </div>
+</div>
+
+<!-- 关键点：首先引入你的数据库脚本，然后再执行网页逻辑 -->
+<script src="database.js"></script>
+<script>
+function 起卦() {
+    // 检查数据库是否正确加载
+    if (typeof hexagramsDatabase === 'undefined' || hexagramsDatabase.length === 0) {
+        alert("数据库文件 database.js 未能正确加载，请检查文件是否存在并放在同一目录下！");
+        return;
+    }
+
+    const card = document.getElementById('resultCard');
+    
+    // 随机从库里抽一卦
+    const randomIndex = Math.floor(Math.random() * hexagramsDatabase.length);
+    const gua = hexagramsDatabase[randomIndex];
+    
+    document.getElementById('guaName').innerText = gua.name;
+    
+    const levelEl = document.getElementById('guaLevel');
+    levelEl.innerText = gua.level;
+    levelEl.className = `评级 ${gua.level}`; 
+    
+    document.getElementById('guaSummary').innerText = gua.summary;
+    
+    const yaoListEl = document.getElementById('yaoList');
+    yaoListEl.innerHTML = ''; 
+    
+    gua.yaos.forEach(yao => {
+        const yaoDiv = document.createElement('div');
+        yaoDiv.className = '爻条';
+        yaoDiv.innerHTML = `
+            <div class="爻名">
+                ${yao.name}
+                <span>${yao.tag}</span>
+            </div>
+            <div class="现实指南">${yao.text}</div>
+        `;
+        yaoListEl.appendChild(yaoDiv);
+    });
+    
+    card.style.display = 'block';
+    card.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
